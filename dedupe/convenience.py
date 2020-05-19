@@ -80,6 +80,7 @@ def console_label(deduper: dedupe.api.ActiveMatching) -> None:  # pragma: no cov
         place_of_residence_pair_2  = record_pair[1]['place_of_residence_wgs84_combined']
         distance_between_pairs = calculate_haversine_distance(place_of_residence_pair_1, place_of_residence_pair_2)
 
+        print(file=sys.stderr)
         for pair in record_pair:
             for field in fields:
                 line = "%s : %s" % (field, pair[field])
@@ -91,9 +92,24 @@ def console_label(deduper: dedupe.api.ActiveMatching) -> None:  # pragma: no cov
               file=sys.stderr)
         print('Do these records refer to the same thing?', file=sys.stderr)
 
-        print('\nBelow some additional information to help you deciding:', file=sys.stderr)
-        distance_output = f'distance between both proposed matches is: {Fore.RED}{distance_between_pairs} kilometers \n'
-        print(Fore.RED + distance_output, file=sys.stderr)
+        print('\nBelow some additional information which shall assist you:\n', file=sys.stderr)
+
+        if distance_between_pairs >= 25:
+            print(f'{Fore.YELLOW}-->{Style.RESET_ALL} proposed matches are more than {Fore.RED}25 kilometers{Style.RESET_ALL} apart!', file=sys.stderr)
+
+        elif record_pair[0]['name'] != record_pair[1]['name']:
+            print(f'{Fore.YELLOW}-->{Style.RESET_ALL} {Fore.BLUE}name{Style.RESET_ALL} attributes are {Fore.RED}not{Style.RESET_ALL} the same!', file=sys.stderr)
+
+        elif record_pair[0]['firstname'] != record_pair[1]['firstname']:
+            print(f'{Fore.YELLOW}-->{Style.RESET_ALL} {Fore.CYAN}firstname{Style.RESET_ALL} attributes are {Fore.RED}not{Style.RESET_ALL} the same!', file=sys.stderr)
+
+        elif int(record_pair[0]['birthyear']) != int(record_pair[1]['birthyear']):
+            print(f'{Fore.YELLOW}-->{Style.RESET_ALL} {Fore.MAGENTA}birthyear{Style.RESET_ALL} attributes are {Fore.RED}not{Style.RESET_ALL} the same!', file=sys.stderr)
+
+        distance_output = f'{Fore.YELLOW}--> INFO:{Style.RESET_ALL} the distance between both proposed GPS coordinates is: {Fore.RED}{distance_between_pairs} kilometers {Style.RESET_ALL}'
+        print(distance_output, file=sys.stderr)
+
+        print(file=sys.stderr)
 
         valid_response = False
         user_input = ''
