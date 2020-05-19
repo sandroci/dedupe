@@ -1,10 +1,15 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+
+from math import radians, cos, sin, asin, sqrt
 import collections
 import itertools
 import sys
 from typing import List, Tuple, Dict, Set
+
+from colorama import Fore, Style, init
+init(autoreset=True)
 
 import dedupe
 from dedupe.core import randomPairs, randomPairsMatch, unique
@@ -12,17 +17,36 @@ from dedupe.canonical import getCanonicalRep
 from dedupe._typing import Data, TrainingData, RecordDict, TrainingExample, Literal, RecordID
 
 
+def calculate_haversine_distance(data_pair_1, data_pair_2):
+    # convert decimal degrees to radians
+    longitude_1 = data_pair_1[0]
+    latitude_1 = data_pair_1[1]
+    longitude_2 = data_pair_2[0]
+    latitude_2 = data_pair_2[1]
+
+    lon1, lat1, lon2, lat2 = map(radians, [longitude_1, latitude_1, longitude_2, latitude_2])
+
+    # haversine formula
+    distance_longitude = lon2 - lon1
+    distance_lat = lat2 - lat1
+    a = sin(distance_lat/2)**2 + cos(lat1) * cos(lat2) * sin(distance_longitude/2)**2
+    c = 2 * asin(sqrt(a))
+    r = 6371 # Radius of earth in kilometers
+    distance = c * r
+    return distance
+
+
 def console_label(deduper: dedupe.api.ActiveMatching) -> None:  # pragma: no cover
     '''
-   Train a matcher instance (Dedupe, RecordLink, or Gazetteer) from the command line.
-   Example
+    Train a matcher instance (Dedupe, RecordLink, or Gazetteer) from the command line.
+    Example
 
    .. code:: python
 
       > deduper = dedupe.Dedupe(variables)
       > deduper.prepare_training(data)
       > dedupe.console_label(deduper)
-    '''
+      '''
 
     finished = False
     use_previous = False
@@ -52,15 +76,24 @@ def console_label(deduper: dedupe.api.ActiveMatching) -> None:  # pragma: no cov
         n_distinct = (len(deduper.training_pairs['distinct']) +
                       sum(label == 'distinct' for _, label in examples_buffer))
 
+        place_of_residence_pair_1  = record_pair[0]['place_of_residence_wgs84_combined']
+        place_of_residence_pair_2  = record_pair[1]['place_of_residence_wgs84_combined']
+        distance_between_pairs = calculate_haversine_distance(place_of_residence_pair_1, place_of_residence_pair_2)
+
         for pair in record_pair:
             for field in fields:
                 line = "%s : %s" % (field, pair[field])
                 print(line, file=sys.stderr)
+
             print(file=sys.stderr)
 
         print("{0}/10 positive, {1}/10 negative".format(n_match, n_distinct),
               file=sys.stderr)
         print('Do these records refer to the same thing?', file=sys.stderr)
+
+        print('\nBelow some additional information to help you deciding:', file=sys.stderr)
+        distance_output = f'distance between both proposed matches is: {Fore.RED}{distance_between_pairs} kilometers \n'
+        print(Fore.RED + distance_output, file=sys.stderr)
 
         valid_response = False
         user_input = ''
@@ -120,21 +153,21 @@ def training_data_link(data_1: Data,
     Args:
 
         data_1: Dictionary of records from first dataset, where the
-                keys are record_ids and the values are dictionaries
-                with the keys being field names
+        keys are record_ids and the values are dictionaries
+        with the keys being field names
         data_2: Dictionary of records from second dataset, same form as
-                data_1
+        data_1
         common_key: The name of the record field that uniquely identifies
-                    a match
+        a match
         training_size: the rough limit of the number of training examples,
-                       defaults to 50000
+        defaults to 50000
 
     .. note::
 
          Every match must be identified by the sharing of a common key.
          This function assumes that if two records do not share a common key
          then they are distinct records.
-    '''
+         '''
 
     identified_records: Dict[str, Tuple[List[RecordID], List[RecordID]]]
     identified_records = collections.defaultdict(lambda: ([], []))
@@ -184,18 +217,18 @@ def training_data_dedupe(data: Data,
     Args:
 
         data: Dictionary of records where the keys are record_ids and
-              the values are dictionaries with the keys being field names
+        the values are dictionaries with the keys being field names
         common_key: The name of the record field that uniquely identifies
-                    a match
+        a match
         training_size: the rough limit of the number of training examples,
-                       defaults to 50000
+        defaults to 50000
 
     .. note::
 
          Every match must be identified by the sharing of a common key.
          This function assumes that if two records do not share a common key
          then they are distinct records.
-    '''
+         '''
 
     identified_records: Dict[str, List[RecordID]]
     identified_records = collections.defaultdict(list)
@@ -244,8 +277,8 @@ def canonicalize(record_cluster: List[RecordDict]) -> RecordDict:  # pragma: noc
 
     Args:
         record_cluster: A list of records within a duplicate cluster, where
-                        the records are dictionaries with field
-                        names as keys and field values as values
+        the records are dictionaries with field
+        names as keys and field values as values
 
     """
     return getCanonicalRep(record_cluster)
