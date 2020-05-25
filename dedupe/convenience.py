@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
+import numpy as np
 from math import radians, cos, sin, asin, sqrt
 import collections
 import itertools
@@ -78,13 +79,22 @@ def console_label(deduper: dedupe.api.ActiveMatching) -> None:  # pragma: no cov
 
         place_of_residence_pair_1  = record_pair[0]['place_of_residence_wgs84_combined']
         place_of_residence_pair_2  = record_pair[1]['place_of_residence_wgs84_combined']
-        distance_between_pairs = calculate_haversine_distance(place_of_residence_pair_1, place_of_residence_pair_2)
+        distance_between_residence_pairs = calculate_haversine_distance(place_of_residence_pair_1, place_of_residence_pair_2)
+
+        place_of_citizenship_pair_1  = record_pair[0]['place_of_citizenship_wgs84_combined']
+        place_of_citizenship_pair_2  = record_pair[1]['place_of_citizenship_wgs84_combined']
+        if not np.any(np.isnan(place_of_citizenship_pair_1)) and not np.any(np.isnan(place_of_citizenship_pair_2)):
+            distance_between_citizenship_pairs = calculate_haversine_distance(place_of_citizenship_pair_1, place_of_citizenship_pair_2)
+
 
         print(file=sys.stderr)
         for pair in record_pair:
             for field in fields:
-                line = "%s : %s" % (field, pair[field])
-                print(line, file=sys.stderr)
+                if field == 'place_of_residence_wgs84_combined' or field == 'place_of_citizenship_wgs84_combined':
+                    continue
+                else:
+                    line = "%s : %s" % (field, pair[field])
+                    print(line, file=sys.stderr)
 
             print(file=sys.stderr)
 
@@ -94,8 +104,11 @@ def console_label(deduper: dedupe.api.ActiveMatching) -> None:  # pragma: no cov
 
         print('\nBelow some additional information which shall assist you:\n', file=sys.stderr)
 
-        if distance_between_pairs >= 25:
-            print(f'{Fore.YELLOW}-->{Style.RESET_ALL} proposed matches are more than {Fore.RED}25 kilometers{Style.RESET_ALL} apart!', file=sys.stderr)
+        if distance_between_residence_pairs >= 25:
+            print(f'{Fore.YELLOW}-->{Style.RESET_ALL} proposed matches (residence places) are more than {Fore.RED}25 kilometers{Style.RESET_ALL} apart!', file=sys.stderr)
+
+        elif distance_between_citizenship_pairs >= 25:
+            print(f'{Fore.YELLOW}-->{Style.RESET_ALL} proposed matches (citizenship places) are more than {Fore.RED}25 kilometers{Style.RESET_ALL} apart!', file=sys.stderr)
 
         elif record_pair[0]['name'] != record_pair[1]['name']:
             print(f'{Fore.YELLOW}-->{Style.RESET_ALL} {Fore.BLUE}name{Style.RESET_ALL} attributes are {Fore.RED}not{Style.RESET_ALL} the same!', file=sys.stderr)
@@ -106,8 +119,11 @@ def console_label(deduper: dedupe.api.ActiveMatching) -> None:  # pragma: no cov
         elif int(record_pair[0]['birthyear']) != int(record_pair[1]['birthyear']):
             print(f'{Fore.YELLOW}-->{Style.RESET_ALL} {Fore.MAGENTA}birthyear{Style.RESET_ALL} attributes are {Fore.RED}not{Style.RESET_ALL} the same!', file=sys.stderr)
 
-        distance_output = f'{Fore.YELLOW}--> INFO:{Style.RESET_ALL} the distance between both proposed GPS coordinates is: {Fore.RED}{distance_between_pairs} kilometers {Style.RESET_ALL}'
-        print(distance_output, file=sys.stderr)
+        distance_residence_output = f'{Fore.YELLOW}--> INFO:{Style.RESET_ALL} the distance between both proposed GPS coordinates (residence place) is: {Fore.RED}{distance_between_residence_pairs} kilometers {Style.RESET_ALL}'
+        print(distance_residence_output, file=sys.stderr)
+
+        distance_citizenship_output = f'{Fore.YELLOW}--> INFO:{Style.RESET_ALL} the distance between both proposed GPS coordinates (citizenship place) is: {Fore.RED}{distance_between_citizenship_pairs} kilometers {Style.RESET_ALL}'
+        print(distance_citizenship_output, file=sys.stderr)
 
         print(file=sys.stderr)
 
