@@ -37,7 +37,7 @@ def calculate_haversine_distance(data_pair_1, data_pair_2):
     return distance
 
 
-def console_label(deduper: dedupe.api.ActiveMatching) -> None:  # pragma: no cover
+def console_label(deduper: dedupe.api.ActiveMatching) -> Tuple:  # pragma: no cover
     '''
     Train a matcher instance (Dedupe, RecordLink, or Gazetteer) from the command line.
     Example
@@ -72,6 +72,7 @@ def console_label(deduper: dedupe.api.ActiveMatching) -> None:  # pragma: no cov
             except IndexError:
                 break
 
+        # TODO: return n_match and n_distinct
         n_match = (len(deduper.training_pairs['match']) +
                    sum(label == 'match' for _, label in examples_buffer))
         n_distinct = (len(deduper.training_pairs['distinct']) +
@@ -88,43 +89,75 @@ def console_label(deduper: dedupe.api.ActiveMatching) -> None:  # pragma: no cov
 
 
         print(file=sys.stderr)
-        for pair in record_pair:
+        name_to_compare = None
+        firstname_to_compare = None
+        birthyear_to_compare = None
+        sex_to_compare = None
+        for index, pair in enumerate(record_pair):
             for field in fields:
-                if field == 'place_of_residence_wgs84_combined' or field == 'place_of_citizenship_wgs84_combined':
-                    continue
-                else:
+                if index == 0:
+                    if field == 'place_of_residence_wgs84_combined' or field == 'place_of_citizenship_wgs84_combined':
+                        continue
+                    elif field == 'name':
+                        name_to_compare = pair[field]
+                    elif field == 'firstname':
+                        firstname_to_compare = pair[field]
+                    elif field == 'birthyear':
+                        birthyear_to_compare = pair[field]
+                    elif field == 'sex':
+                        sex_to_compare = pair[field]
+
                     line = "%s : %s" % (field, pair[field])
-                    print(line, file=sys.stderr)
+
+                else:
+                    if field == 'place_of_residence_wgs84_combined' or field == 'place_of_citizenship_wgs84_combined':
+                        continue
+
+                    if field == 'name':
+                        if not pair[field]:
+                            line = f'{Fore.RED}{field}:{Style.RESET_ALL} {pair[field]}'
+                        elif pair[field] != name_to_compare:
+                            line = f'{Fore.YELLOW}{field}:{Style.RESET_ALL} {pair[field]}'
+                        else:
+                            line = f'{Fore.GREEN}{field}:{Style.RESET_ALL} {pair[field]}'
+
+                    elif field == 'firstname':
+                        if not pair[field]:
+                            line = f'{Fore.RED}{field}:{Style.RESET_ALL} {pair[field]}'
+                        elif pair[field] != firstname_to_compare:
+                            line = f'{Fore.YELLOW}{field}:{Style.RESET_ALL} {pair[field]}'
+                        else:
+                            line = f'{Fore.GREEN}{field}:{Style.RESET_ALL} {pair[field]}'
+
+                    elif field == 'birthyear':
+                        if not pair[field]:
+                            line = f'{Fore.RED}{field}:{Style.RESET_ALL} {pair[field]}'
+                        elif pair[field] != birthyear_to_compare:
+                            line = f'{Fore.YELLOW}{field}:{Style.RESET_ALL} {pair[field]}'
+                        else:
+                            line = f'{Fore.GREEN}{field}:{Style.RESET_ALL} {pair[field]}'
+
+                    elif field == 'sex':
+                        if not pair[field]:
+                            line = f'{Fore.RED}{field}:{Style.RESET_ALL} {pair[field]}'
+                        elif pair[field] != sex_to_compare:
+                            line = f'{Fore.YELLOW}{field}:{Style.RESET_ALL} {pair[field]}'
+                        else:
+                            line = f'{Fore.GREEN}{field}:{Style.RESET_ALL} {pair[field]}'
+
+
+                print(line, file=sys.stderr)
 
             print(file=sys.stderr)
 
-        print("{0}/10 positive, {1}/10 negative".format(n_match, n_distinct),
-              file=sys.stderr)
-        print('Do these records refer to the same thing?', file=sys.stderr)
-
         print('\nBelow some additional information which shall assist you:\n', file=sys.stderr)
-
-        if distance_between_residence_pairs >= 25:
-            print(f'{Fore.YELLOW}-->{Style.RESET_ALL} proposed matches (residence places) are more than {Fore.RED}25 kilometers{Style.RESET_ALL} apart!', file=sys.stderr)
-
-        elif distance_between_citizenship_pairs >= 25:
-            print(f'{Fore.YELLOW}-->{Style.RESET_ALL} proposed matches (citizenship places) are more than {Fore.RED}25 kilometers{Style.RESET_ALL} apart!', file=sys.stderr)
-
-        elif record_pair[0]['name'] != record_pair[1]['name']:
-            print(f'{Fore.YELLOW}-->{Style.RESET_ALL} {Fore.BLUE}name{Style.RESET_ALL} attributes are {Fore.RED}not{Style.RESET_ALL} the same!', file=sys.stderr)
-
-        elif record_pair[0]['firstname'] != record_pair[1]['firstname']:
-            print(f'{Fore.YELLOW}-->{Style.RESET_ALL} {Fore.CYAN}firstname{Style.RESET_ALL} attributes are {Fore.RED}not{Style.RESET_ALL} the same!', file=sys.stderr)
-
-        elif int(record_pair[0]['birthyear']) != int(record_pair[1]['birthyear']):
-            print(f'{Fore.YELLOW}-->{Style.RESET_ALL} {Fore.MAGENTA}birthyear{Style.RESET_ALL} attributes are {Fore.RED}not{Style.RESET_ALL} the same!', file=sys.stderr)
-
-        distance_residence_output = f'{Fore.YELLOW}--> INFO:{Style.RESET_ALL} the distance between both proposed GPS coordinates (residence place) is: {Fore.RED}{distance_between_residence_pairs} kilometers {Style.RESET_ALL}'
+        distance_residence_output = f'distance residence places: {int(distance_between_residence_pairs)} km'
         print(distance_residence_output, file=sys.stderr)
-
-        distance_citizenship_output = f'{Fore.YELLOW}--> INFO:{Style.RESET_ALL} the distance between both proposed GPS coordinates (citizenship place) is: {Fore.RED}{distance_between_citizenship_pairs} kilometers {Style.RESET_ALL}'
+        distance_citizenship_output = f'distance citizenship places: {int(distance_between_citizenship_pairs)} km'
         print(distance_citizenship_output, file=sys.stderr)
 
+        print(file=sys.stderr)
+        print('Do these records refer to the same person?', file=sys.stderr)
         print(file=sys.stderr)
 
         valid_response = False
@@ -172,6 +205,8 @@ def console_label(deduper: dedupe.api.ActiveMatching) -> None:  # pragma: no cov
             examples = {'distinct': [], 'match': []}
             examples[label].append(record_pair)  # type: ignore
             deduper.mark_pairs(examples)
+
+    return (n_match, n_distinct)
 
 
 def training_data_link(data_1: Data,
