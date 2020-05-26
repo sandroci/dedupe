@@ -115,33 +115,33 @@ def console_label(deduper: dedupe.api.ActiveMatching) -> Tuple:  # pragma: no co
 
                     if field == 'name':
                         if not pair[field]:
-                            line = f'{Fore.RED}{field}:{Style.RESET_ALL} {pair[field]}'
-                        elif pair[field] != name_to_compare:
                             line = f'{Fore.YELLOW}{field}:{Style.RESET_ALL} {pair[field]}'
+                        elif pair[field] != name_to_compare:
+                            line = f'{Fore.RED}{field}:{Style.RESET_ALL} {pair[field]}'
                         else:
                             line = f'{Fore.GREEN}{field}:{Style.RESET_ALL} {pair[field]}'
 
                     elif field == 'firstname':
                         if not pair[field]:
-                            line = f'{Fore.RED}{field}:{Style.RESET_ALL} {pair[field]}'
-                        elif pair[field] != firstname_to_compare:
                             line = f'{Fore.YELLOW}{field}:{Style.RESET_ALL} {pair[field]}'
+                        elif pair[field] != firstname_to_compare:
+                            line = f'{Fore.RED}{field}:{Style.RESET_ALL} {pair[field]}'
                         else:
                             line = f'{Fore.GREEN}{field}:{Style.RESET_ALL} {pair[field]}'
 
                     elif field == 'birthyear':
                         if not pair[field]:
-                            line = f'{Fore.RED}{field}:{Style.RESET_ALL} {pair[field]}'
-                        elif pair[field] != birthyear_to_compare:
                             line = f'{Fore.YELLOW}{field}:{Style.RESET_ALL} {pair[field]}'
+                        elif pair[field] != birthyear_to_compare:
+                            line = f'{Fore.RED}{field}:{Style.RESET_ALL} {pair[field]}'
                         else:
                             line = f'{Fore.GREEN}{field}:{Style.RESET_ALL} {pair[field]}'
 
                     elif field == 'sex':
                         if not pair[field]:
-                            line = f'{Fore.RED}{field}:{Style.RESET_ALL} {pair[field]}'
-                        elif pair[field] != sex_to_compare:
                             line = f'{Fore.YELLOW}{field}:{Style.RESET_ALL} {pair[field]}'
+                        elif pair[field] != sex_to_compare:
+                            line = f'{Fore.RED}{field}:{Style.RESET_ALL} {pair[field]}'
                         else:
                             line = f'{Fore.GREEN}{field}:{Style.RESET_ALL} {pair[field]}'
 
@@ -150,7 +150,6 @@ def console_label(deduper: dedupe.api.ActiveMatching) -> Tuple:  # pragma: no co
 
             print(file=sys.stderr)
 
-        print('\nBelow some additional information which shall assist you:\n', file=sys.stderr)
         distance_residence_output = f'distance residence places: {int(distance_between_residence_pairs)} km'
         print(distance_residence_output, file=sys.stderr)
         distance_citizenship_output = f'distance citizenship places: {int(distance_between_citizenship_pairs)} km'
