@@ -1016,8 +1016,13 @@ class ActiveMatching(Matching):
                 if entry not in filtered_matches:
                     filtered_matches.append(entry)
 
-        assert filtered_distinct[0] in [entry for entry in training_data['distinct']]
-        assert filtered_matches[0] in [entry for entry in training_data['match']]
+
+        assert filtered_distinct[1] in [entry for entry in training_data['distinct']]
+        assert filtered_matches[1] in [entry for entry in training_data['match']]
+
+        print(f'samples from previous training sessions (distinct): {len(filtered_distinct)}')
+        print(f'samples from previous training sessions (matches): {len(filtered_matches)}')
+
 
         filtered_training_pairs = {'distinct': filtered_distinct,
                                    'match': filtered_matches}
