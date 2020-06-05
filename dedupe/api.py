@@ -995,11 +995,35 @@ class ActiveMatching(Matching):
             '''
 
         logger.info('reading training from file')
-        training_pairs = json.load(training_file,
-                                   cls=serializer.dedupe_decoder)
+
+        filtered_distinct = []
+        filtered_matches = []
+        training_pairs = []
+
+        if isinstance(training_file, list):
+            for entry in training_file:
+                training_data = json.load(entry, cls=serializer.dedupe_decoder)
+                training_pairs.append(training_data)
+        else:
+            training_pairs.append(json.load(training_file, cls=serializer.dedupe_decoder))
+
+        for training_data in training_pairs:
+            for entry in training_data['distinct']:
+                if entry not in filtered_distinct:
+                    filtered_distinct.append(entry)
+
+            for entry in training_data['match']:
+                if entry not in filtered_matches:
+                    filtered_matches.append(entry)
+
+        assert filtered_distinct[0] in [entry for entry in training_data['distinct']]
+        assert filtered_matches[0] in [entry for entry in training_data['match']]
+
+        filtered_training_pairs = {'distinct': filtered_distinct,
+                                   'match': filtered_matches}
 
         try:
-            self.mark_pairs(training_pairs)
+            self.mark_pairs(filtered_training_pairs)
         except AttributeError as e:
             if "Attempting to fingerprint with an index predicate without indexing records" in str(e):
                 raise UserWarning('Training data has records not known '
@@ -1239,12 +1263,7 @@ class Dedupe(ActiveMatching, DedupeMatching):
 
         '''
 
-        if training_file:
-            if isinstance(training_file, list):
-                for entry in training_file:
-                    self._read_training(entry)
-            else:
-                self._read_training(training_file)
+        self._read_training(training_file)
 
         self._sample(data, sample_size, blocked_proportion, original_length)
 
@@ -1350,12 +1369,7 @@ class Link(ActiveMatching):
 
         '''
 
-        if training_file:
-            if isinstance(training_file, list):
-                for entry in training_file:
-                    self._read_training(entry)
-            else:
-                self._read_training(training_file)
+        self._read_training(training_file)
 
         self._sample(data_1,
                      data_2,
